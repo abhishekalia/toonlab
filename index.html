@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ToonLab — AI Cartoon Video Generator by @aktuallyakk</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f5f2eb;
+  --surface: #ffffff;
+  --surface2: #f0ece3;
+  --border: #e0d9cc;
+  --ink: #1a1610;
+  --ink2: #6b5f4e;
+  --accent: #e8431a;
+  --free-c: #16a34a;
+  --pro-c: #7c3aed;
+  --scene-c: #e8431a;
+  --narration-c: #2563eb;
+  --image-c: #0891b2;
+  --video-c: #7c3aed;
+  --step-c: #16a34a;
+  --stamp: 'Bebas Neue', sans-serif;
+  --body: 'DM Sans', sans-serif;
+  --mono: 'DM Mono', monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); min-height: 100vh; }
+.wrap { max-width: 900px; margin: 0 auto; padding: 40px 20px 100px; }
+
+/* HEADER */
+header { border-bottom: 3px solid var(--ink); padding-bottom: 24px; margin-bottom: 36px; }
+.eyebrow { font-family: var(--mono); font-size: 10px; letter-spacing: .16em; color: var(--ink2); text-transform: uppercase; margin-bottom: 10px; }
+h1 { font-family: var(--stamp); font-size: clamp(48px,9vw,88px); line-height: .92; letter-spacing: .02em; margin-bottom: 12px; }
+h1 .r { color: var(--accent); }
+.sub { font-size: 14px; color: var(--ink2); line-height: 1.6; max-width: 500px; }
+
+/* TIER */
+.tier-row { margin-bottom: 28px; }
+.tier-row label { font-family: var(--mono); font-size: 10px; letter-spacing: .12em; color: var(--ink2); text-transform: uppercase; display: block; margin-bottom: 8px; }
+.tier-toggle { display: inline-flex; border: 2px solid var(--ink); overflow: hidden; }
+.t-btn { padding: 9px 22px; font-family: var(--stamp); font-size: 17px; letter-spacing: .05em; cursor: pointer; border: none; background: transparent; color: var(--ink2); transition: all .15s; }
+.t-btn .badge { font-family: var(--mono); font-size: 9px; letter-spacing: .08em; padding: 1px 6px; margin-left: 5px; vertical-align: middle; }
+.t-btn.af { background: var(--free-c); color: #fff; }
+.t-btn.af .badge { background: rgba(255,255,255,.2); color: #fff; }
+.t-btn.ap { background: var(--pro-c); color: #fff; }
+.t-btn.ap .badge { background: rgba(255,255,255,.2); color: #fff; }
+
+/* CARD */
+.card { background: var(--surface); border: 2px solid var(--ink); padding: 22px; margin-bottom: 14px; position: relative; }
+.card::after { content:''; position:absolute; bottom:-4px; right:-4px; width:100%; height:100%; background:var(--ink); z-index:-1; }
+.card-ttl { font-family: var(--stamp); font-size: 20px; letter-spacing: .05em; margin-bottom: 14px; display: flex; align-items: center; gap: 10px; }
+.card-ttl .n { font-family: var(--mono); font-size: 10px; background: var(--ink); color: var(--bg); padding: 2px 8px; }
+
+lbl { display: block; font-family: var(--mono); font-size: 10px; letter-spacing: .12em; color: var(--ink2); text-transform: uppercase; margin-bottom: 6px; }
+
+input[type=text], textarea, select {
+  width: 100%; background: var(--surface2); border: 1.5px solid var(--border); color: var(--ink);
+  font-family: var(--body); font-size: 14px; padding: 11px 13px; outline: none; border-radius: 0; appearance: none; transition: border-color .15s;
+}
+input[type=text]:focus, textarea:focus, select:focus { border-color: var(--ink); }
+textarea { resize: none; line-height: 1.6; }
+input::placeholder, textarea::placeholder { color: var(--ink2); opacity: .5; }
+select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='7'%3E%3Cpath d='M1 1l4.5 4.5L10 1' stroke='%231a1610' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 12px center; cursor: pointer;
+}
+.g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+/* STYLE GRID — NEW DESIGN */
+.style-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 4px; }
+
+.sp {
+  border: 2px solid var(--border);
+  background: var(--surface2);
+  padding: 14px 12px;
+  cursor: pointer;
+  transition: all .15s;
+  position: relative;
+  overflow: hidden;
+}
+.sp:hover { border-color: var(--ink); }
+.sp.sel { border-color: var(--ink); background: var(--ink); }
+
+.sp-top { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.sp-em { font-size: 22px; line-height: 1; }
+.sp-name { font-family: var(--stamp); font-size: 17px; letter-spacing: .04em; color: var(--ink); transition: color .15s; }
+.sp.sel .sp-name { color: var(--bg); }
+
+.sp-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
+.sp-tag {
+  font-family: var(--mono); font-size: 9px; letter-spacing: .06em;
+  padding: 2px 6px; border: 1px solid var(--border);
+  color: var(--ink2); transition: all .15s; text-transform: uppercase;
+}
+.sp.sel .sp-tag { border-color: rgba(245,242,235,.2); color: rgba(245,242,235,.5); }
+
+.sp-desc { font-size: 11px; line-height: 1.4; color: var(--ink2); transition: color .15s; }
+.sp.sel .sp-desc { color: rgba(245,242,235,.6); }
+
+.sp-check {
+  position: absolute; top: 10px; right: 10px;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: var(--accent); display: none; align-items: center; justify-content: center;
+  font-size: 10px; color: white;
+}
+.sp.sel .sp-check { display: flex; }
+
+/* TOGGLES */
+.tog-row { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 4px; }
+.tog { display: flex; align-items: center; gap: 7px; border: 1.5px solid var(--border); padding: 8px 13px; cursor: pointer; transition: all .12s; font-size: 13px; font-weight: 500; color: var(--ink2); user-select: none; }
+.tog:hover { border-color: var(--ink); color: var(--ink); }
+.tog.on { border-color: var(--cc); background: var(--cc); color: #fff; }
+.tog-dot { width: 7px; height: 7px; border-radius: 50%; border: 1.5px solid currentColor; flex-shrink: 0; }
+.tog.on .tog-dot { background: #fff; border-color: #fff; }
+
+/* GENERATE BTN */
+.gen-btn { width: 100%; background: var(--accent); border: 2px solid var(--ink); color: #fff; font-family: var(--stamp); font-size: 26px; letter-spacing: .08em; padding: 16px; cursor: pointer; transition: transform .1s; margin-top: 10px; position: relative; z-index: 1; }
+.gen-btn::after { content:''; position:absolute; bottom:-4px; right:-4px; width:100%; height:100%; background:var(--ink); z-index:-1; }
+.gen-btn:hover { transform: translate(-2px,-2px); }
+.gen-btn:active { transform: translate(1px,1px); }
+.gen-btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+/* LOADER */
+.loader { height: 4px; background: var(--border); margin-top: 14px; display: none; overflow: hidden; }
+.loader.on { display: block; }
+.loader-inner { height: 100%; background: repeating-linear-gradient(90deg, var(--accent) 0, var(--accent) 18px, var(--ink) 18px, var(--ink) 22px); animation: march .5s linear infinite; width: 200%; }
+@keyframes march { to { transform: translateX(-22px); } }
+.err { background: #fef2f2; border: 1.5px solid #fca5a5; padding: 12px 14px; color: #dc2626; font-size: 13px; margin-top: 10px; display: none; }
+.err.on { display: block; }
+
+
+/* PIPELINE BANNER */
+.pipeline-banner{background:var(--ink);border:2px solid var(--ink);margin-bottom:22px;overflow:hidden}
+.pb-banner-head{background:var(--step-c);padding:10px 18px;display:flex;align-items:center;justify-content:space-between}
+.pb-banner-title{font-family:var(--stamp);font-size:18px;letter-spacing:.05em;color:#fff}
+.pb-tier-tag{font-family:var(--mono);font-size:9px;letter-spacing:.1em;background:rgba(255,255,255,.2);color:#fff;padding:3px 10px;text-transform:uppercase}
+.pipe-steps{display:flex;overflow-x:auto;scrollbar-width:none}
+.pipe-steps::-webkit-scrollbar{display:none}
+.pipe-step{flex:0 0 auto;min-width:130px;padding:14px 16px;border-right:1px solid rgba(255,255,255,.07);display:flex;flex-direction:column;gap:4px}
+.pipe-step:last-child{border-right:none}
+.pipe-step-n{font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:rgba(245,242,235,.3);text-transform:uppercase}
+.pipe-step-icon{font-size:20px;line-height:1}
+.pipe-step-action{font-family:var(--stamp);font-size:14px;letter-spacing:.04em;color:#fff;line-height:1.1}
+.pipe-step-tool{font-family:var(--mono);font-size:9px;color:rgba(245,242,235,.45)}
+.pipe-step-tool a{color:var(--step-c);text-decoration:none;border-bottom:1px solid var(--step-c)}
+.pipe-arrow{flex:0 0 auto;display:flex;align-items:center;color:rgba(245,242,235,.18);font-size:12px;padding:0 2px;align-self:center}
+
+/* PER-SCENE NEXT STEP */
+.scene-next{border:2px solid var(--step-c);background:#f0fdf4;padding:14px 16px}
+.sn-label{font-family:var(--mono);font-size:9px;letter-spacing:.12em;color:var(--step-c);text-transform:uppercase;font-weight:500;display:flex;align-items:center;gap:6px;margin-bottom:10px}
+.sn-label::before{content:'';display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--step-c)}
+.sn-steps{display:flex;flex-direction:column;gap:8px}
+.sn-row{display:flex;gap:10px;align-items:flex-start;font-size:13px;line-height:1.5;color:var(--ink)}
+.sn-num{font-family:var(--mono);font-size:10px;background:var(--step-c);color:#fff;min-width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.sn-row a{color:var(--step-c);font-weight:600;text-decoration:none;border-bottom:1px solid var(--step-c)}
+.sn-progress{font-family:var(--mono);font-size:10px;color:var(--ink2);letter-spacing:.06em;margin-top:10px;padding-top:10px;border-top:1px dashed var(--border)}
+
+/* FINAL CHECKLIST */
+.checklist{background:var(--ink);border:2px solid var(--ink);margin-top:8px;overflow:hidden}
+.cl-head{background:var(--accent);padding:12px 20px}
+.cl-title{font-family:var(--stamp);font-size:22px;letter-spacing:.05em;color:#fff}
+.cl-sub{font-family:var(--mono);font-size:10px;color:rgba(255,255,255,.65);letter-spacing:.08em;margin-top:2px}
+.cl-body{padding:18px;display:flex;flex-direction:column}
+.cl-row{display:grid;grid-template-columns:34px 1fr auto;gap:14px;align-items:start;padding:14px 0;border-bottom:1px solid rgba(255,255,255,.06)}
+.cl-row:last-child{border-bottom:none}
+.cl-icon{font-size:22px;line-height:1;margin-top:2px}
+.cl-action{font-family:var(--stamp);font-size:17px;letter-spacing:.04em;color:#fff;line-height:1;margin-bottom:4px}
+.cl-detail{font-size:13px;color:rgba(245,242,235,.58);line-height:1.5}
+.cl-detail a{color:var(--step-c);text-decoration:none;border-bottom:1px solid var(--step-c)}
+.cl-badge{font-family:var(--mono);font-size:9px;letter-spacing:.08em;padding:4px 10px;border:1px solid rgba(255,255,255,.15);color:rgba(245,242,235,.55);text-transform:uppercase;white-space:nowrap;align-self:start;margin-top:4px}
+.cl-badge.free{border-color:var(--free-c);color:var(--free-c)}.cl-badge.pro{border-color:var(--pro-c);color:var(--pro-c)}
+
+/* RESULTS */
+.results { display: none; margin-top: 36px; }
+.results.on { display: block; animation: up .3s ease; }
+@keyframes up { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+
+.res-hdr { display: flex; align-items: flex-end; justify-content: space-between; border-bottom: 3px solid var(--ink); padding-bottom: 14px; margin-bottom: 24px; }
+.res-ttl { font-family: var(--stamp); font-size: 40px; letter-spacing: .05em; line-height: 1; }
+.copy-all-btn { background: var(--ink); border: none; color: var(--bg); font-family: var(--mono); font-size: 10px; letter-spacing: .1em; padding: 8px 14px; cursor: pointer; text-transform: uppercase; transition: opacity .15s; }
+.copy-all-btn:hover { opacity: .7; }
+
+/* STYLE PREVIEW BADGE — shown in results */
+.style-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--ink); color: var(--bg);
+  padding: 6px 14px; margin-bottom: 18px;
+  font-family: var(--mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase;
+}
+.style-badge .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+
+/* CHARACTER PILL */
+.char-pill { background: var(--ink); color: var(--bg); padding: 14px 18px; margin-bottom: 20px; border-left: 5px solid var(--accent); }
+.char-pill-lbl { font-family: var(--mono); font-size: 9px; letter-spacing: .14em; opacity: .5; margin-bottom: 5px; text-transform: uppercase; }
+.char-pill-body { font-size: 13px; line-height: 1.65; }
+.char-pill-copy { margin-top: 8px; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2); color: rgba(255,255,255,.8); font-family: var(--mono); font-size: 9px; letter-spacing: .08em; padding: 4px 10px; cursor: pointer; text-transform: uppercase; transition: all .15s; }
+.char-pill-copy:hover { background: rgba(255,255,255,.2); }
+
+/* FILMSTRIP */
+.storyboard-wrap { margin-bottom: 24px; }
+.sb-label { font-family: var(--mono); font-size: 10px; letter-spacing: .14em; color: var(--ink2); text-transform: uppercase; margin-bottom: 10px; }
+.filmstrip { display: flex; overflow-x: auto; border: 2px solid var(--ink); background: var(--ink); padding: 3px; gap: 3px; scrollbar-width: thin; scrollbar-color: var(--ink2) var(--surface2); }
+.filmstrip::-webkit-scrollbar { height: 4px; }
+.filmstrip::-webkit-scrollbar-track { background: var(--surface2); }
+.filmstrip::-webkit-scrollbar-thumb { background: var(--ink2); }
+.frame { flex: 0 0 155px; background: var(--surface2); cursor: pointer; transition: all .15s; border: 2px solid transparent; position: relative; overflow: hidden; }
+.frame:hover { background: var(--surface); }
+.frame.active { background: var(--surface); border-color: var(--accent); }
+.frame-num { font-family: var(--mono); font-size: 9px; letter-spacing: .1em; color: var(--ink2); padding: 7px 10px 0; text-transform: uppercase; }
+.frame-art { height: 88px; display: flex; align-items: center; justify-content: center; font-size: 34px; }
+.frame-title { padding: 5px 10px 10px; font-size: 11px; font-weight: 600; line-height: 1.3; color: var(--ink); }
+.frame-active-bar { position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: var(--accent); transform: scaleX(0); transition: transform .15s; }
+.frame.active .frame-active-bar { transform: scaleX(1); }
+.frame-arrow { flex: 0 0 auto; display: flex; align-items: center; justify-content: center; background: var(--ink); color: rgba(245,242,235,.25); font-size: 11px; padding: 0 2px; }
+
+/* SCENE PANEL */
+.scene-panel { display: none; border: 2px solid var(--ink); background: var(--surface); margin-top: 3px; animation: panelIn .2s ease; }
+.scene-panel.on { display: block; }
+@keyframes panelIn { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
+.panel-head { background: var(--ink); color: var(--bg); padding: 10px 18px; display: flex; align-items: center; gap: 14px; }
+.panel-scene-num { font-family: var(--mono); font-size: 9px; letter-spacing: .14em; opacity: .5; text-transform: uppercase; }
+.panel-scene-name { font-family: var(--stamp); font-size: 20px; letter-spacing: .05em; flex: 1; }
+.panel-nav { display: flex; gap: 6px; }
+.panel-nav-btn { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2); color: rgba(255,255,255,.8); font-family: var(--mono); font-size: 10px; letter-spacing: .06em; padding: 4px 10px; cursor: pointer; transition: background .12s; text-transform: uppercase; }
+.panel-nav-btn:hover { background: rgba(255,255,255,.2); }
+.panel-nav-btn:disabled { opacity: .3; cursor: not-allowed; }
+.panel-body { padding: 18px; display: flex; flex-direction: column; gap: 10px; }
+
+/* PROMPT BLOCKS */
+.pb { border: 1.5px solid; overflow: hidden; }
+.pb-hd { display: flex; align-items: center; justify-content: space-between; padding: 7px 12px; }
+.pb-lbl { font-family: var(--mono); font-size: 9px; letter-spacing: .12em; font-weight: 500; text-transform: uppercase; display: flex; align-items: center; gap: 5px; }
+.pb-cp { background: none; border: 1px solid currentColor; font-family: var(--mono); font-size: 9px; letter-spacing: .08em; padding: 3px 8px; cursor: pointer; opacity: .6; transition: opacity .12s; text-transform: uppercase; color: inherit; }
+.pb-cp:hover { opacity: 1; }
+.pb-txt { padding: 11px 13px; font-size: 13px; line-height: 1.7; background: var(--surface2); white-space: pre-wrap; color: var(--ink); border-top: 1px solid; border-color: inherit; }
+.pb-scene { border-color: var(--scene-c); color: var(--scene-c); }
+.pb-scene .pb-hd { background: rgba(232,67,26,.07); }
+.pb-image { border-color: var(--image-c); color: var(--image-c); }
+.pb-image .pb-hd { background: rgba(8,145,178,.07); }
+.pb-video { border-color: var(--video-c); color: var(--video-c); }
+.pb-video .pb-hd { background: rgba(124,58,237,.07); }
+.pb-narration { border-color: var(--narration-c); color: var(--narration-c); }
+.pb-narration .pb-hd { background: rgba(37,99,235,.07); }
+
+/* NEXT STEPS */
+.next-steps { border: 2px solid var(--step-c); overflow: hidden; margin-top: 20px; }
+.ns-hd { background: var(--step-c); padding: 8px 14px; display: flex; align-items: center; gap: 8px; }
+.ns-lbl { font-family: var(--mono); font-size: 9px; letter-spacing: .12em; color: #fff; font-weight: 500; text-transform: uppercase; flex: 1; }
+.ns-tier-badge { font-family: var(--mono); font-size: 8px; letter-spacing: .08em; background: rgba(255,255,255,.25); color: #fff; padding: 2px 8px; text-transform: uppercase; }
+.ns-body { background: #f0fdf4; padding: 14px; }
+.ns-step { display: flex; gap: 10px; margin-bottom: 9px; font-size: 13px; line-height: 1.5; color: var(--ink); }
+.ns-step:last-child { margin-bottom: 0; }
+.ns-num { font-family: var(--mono); font-size: 10px; font-weight: 500; background: var(--step-c); color: #fff; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+.ns-link { color: var(--step-c); font-weight: 600; text-decoration: none; border-bottom: 1px solid var(--step-c); }
+
+/* EXAMPLES */
+.egs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.eg { background: var(--surface2); border: 1px solid var(--border); padding: 5px 11px; font-size: 12px; color: var(--ink2); cursor: pointer; transition: all .12s; }
+.eg:hover { border-color: var(--ink); color: var(--ink); }
+
+@media (max-width: 640px) {
+  .g2 { grid-template-columns: 1fr; }
+  .style-grid { grid-template-columns: 1fr 1fr; }
+  .frame { flex: 0 0 130px; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+    <div class="eyebrow">AI CARTOON VIDEO GENERATOR</div>
+    <a href="https://instagram.com/aktuallyakk" target="_blank" style="display:inline-flex;align-items:center;gap:7px;text-decoration:none;background:var(--ink);color:var(--bg);padding:7px 14px;font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;transition:opacity .15s;" onmouseover="this.style.opacity='.75'" onmouseout="this.style.opacity='1'">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
+      @aktuallyakk
+    </a>
+  </div>
+  <h1>TOON<span class="r">LAB</span></h1>
+  <p class="sub">Drop your idea. Get your full production brief — scenes, image prompts, video prompts, and exactly what to do next, step by step.</p>
+</header>
+
+<!-- TIER -->
+<div class="tier-row">
+  <label>YOUR SETUP</label>
+  <div class="tier-toggle">
+    <button class="t-btn af" id="freeBtn" onclick="setTier('free')">FREE <span class="badge">GOOGLE FLOW</span></button>
+    <button class="t-btn" id="proBtn" onclick="setTier('pro')">PRO <span class="badge">HIGGSFIELD</span></button>
+  </div>
+</div>
+
+<!-- IDEA -->
+<div class="card">
+  <div class="card-ttl"><span class="n">01</span> YOUR IDEA</div>
+  <lbl>What's your video about?</lbl>
+  <textarea id="ideaInput" rows="3" placeholder="e.g. A broke college student accidentally builds a teleportation device in his dorm room..."></textarea>
+  <div class="egs">
+    <span class="eg" onclick="setEg(this)">🦝 Raccoon becomes unlikely city hero</span>
+    <span class="eg" onclick="setEg(this)">🤖 AI robot learns what it means to feel</span>
+    <span class="eg" onclick="setEg(this)">👴 Grandpa discovers social media</span>
+    <span class="eg" onclick="setEg(this)">🌮 Street food vendor with a secret past</span>
+  </div>
+</div>
+
+<!-- CHARACTER -->
+<div class="card">
+  <div class="card-ttl"><span class="n">02</span> MAIN CHARACTER</div>
+  <p style="font-size:13px;color:var(--ink2);margin-bottom:14px;line-height:1.5;">Define once — baked into every image prompt automatically so your character stays consistent across all scenes.</p>
+  <div class="g2" style="margin-bottom:12px;">
+    <div><lbl>Character Name</lbl><input type="text" id="charName" placeholder="e.g. Rico the Raccoon"></div>
+    <div>
+      <lbl>Character Type</lbl>
+      <select id="charType">
+        <option value="cartoon animal">Cartoon Animal</option>
+        <option value="human character">Human Character</option>
+        <option value="robot / AI character">Robot / AI</option>
+        <option value="fantasy creature">Fantasy Creature</option>
+        <option value="everyday person">Everyday Person</option>
+      </select>
+    </div>
+  </div>
+  <lbl>Their look (clothing, colors, features, personality vibe)</lbl>
+  <textarea id="charDesc" rows="2" placeholder="e.g. Chubby raccoon, always wearing a too-small red hoodie and oversized sneakers, big expressive eyes, slightly tired look..."></textarea>
+</div>
+
+<!-- STYLE -->
+<div class="card">
+  <div class="card-ttl"><span class="n">03</span> VISUAL STYLE</div>
+  <lbl>Pick your cartoon style — each one has a full visual fingerprint built in</lbl>
+  <div class="style-grid" id="styleGrid">
+
+    <div class="sp sel" data-style="ghibli" onclick="pickStyle(this)">
+      <div class="sp-check">✓</div>
+      <div class="sp-top"><span class="sp-em">🌿</span><span class="sp-name">GHIBLI</span></div>
+      <div class="sp-tags">
+        <span class="sp-tag">watercolor</span>
+        <span class="sp-tag">soft light</span>
+        <span class="sp-tag">lush</span>
+      </div>
+      <div class="sp-desc">Hand-painted textures, muted earth tones, expressive eyes, organic environments</div>
+    </div>
+
+    <div class="sp" data-style="flat2d" onclick="pickStyle(this)">
+      <div class="sp-check">✓</div>
+      <div class="sp-top"><span class="sp-em">📐</span><span class="sp-name">FLAT 2D</span></div>
+      <div class="sp-tags">
+        <span class="sp-tag">bold outlines</span>
+        <span class="sp-tag">minimal</span>
+        <span class="sp-tag">graphic</span>
+      </div>
+      <div class="sp-desc">Clean vector shapes, solid fills, thick outlines, geometric layouts, no gradients</div>
+    </div>
+
+    <div class="sp" data-style="stopmotion" onclick="pickStyle(this)">
+      <div class="sp-check">✓</div>
+      <div class="sp-top"><span class="sp-em">🧸</span><span class="sp-name">STOP MOTION</span></div>
+      <div class="sp-tags">
+        <span class="sp-tag">clay texture</span>
+        <span class="sp-tag">handcrafted</span>
+        <span class="sp-tag">tactile</span>
+      </div>
+      <div class="sp-desc">Lumpy clay surfaces, fingerprint textures, warm studio lighting, charming imperfection</div>
+    </div>
+
+    <div class="sp" data-style="comicbook" onclick="pickStyle(this)">
+      <div class="sp-check">✓</div>
+      <div class="sp-top"><span class="sp-em">💥</span><span class="sp-name">COMIC BOOK</span></div>
+      <div class="sp-tags">
+        <span class="sp-tag">halftone</span>
+        <span class="sp-tag">ink lines</span>
+        <span class="sp-tag">bold color</span>
+      </div>
+      <div class="sp-desc">Heavy ink outlines, halftone dots, saturated primaries, dramatic panel-style framing</div>
+    </div>
+
+    <div class="sp" data-style="pixar" onclick="pickStyle(this)">
+      <div class="sp-check">✓</div>
+      <div class="sp-top"><span class="sp-em">✨</span><span class="sp-name">PIXAR CGI</span></div>
+      <div class="sp-tags">
+        <span class="sp-tag">3D render</span>
+        <span class="sp-tag">subsurface</span>
+        <span class="sp-tag">cinematic</span>
+      </div>
+      <div class="sp-desc">Polished 3D, subsurface skin glow, volumetric lighting, exaggerated but believable shapes</div>
+    </div>
+
+    <div class="sp" data-style="anime" onclick="pickStyle(this)">
+      <div class="sp-check">✓</div>
+      <div class="sp-top"><span class="sp-em">⛩️</span><span class="sp-name">ANIME</span></div>
+      <div class="sp-tags">
+        <span class="sp-tag">cel shaded</span>
+        <span class="sp-tag">speed lines</span>
+        <span class="sp-tag">vivid</span>
+      </div>
+      <div class="sp-desc">Large expressive eyes, cel shading, dramatic lighting, speed lines, vibrant saturated palette</div>
+    </div>
+
+  </div>
+
+  <div class="g2" style="margin-top:16px;">
+    <div>
+      <lbl>Platform</lbl>
+      <select id="platform">
+        <option value="YouTube (16:9)">YouTube (16:9)</option>
+        <option value="Instagram Reels / TikTok (9:16)">Instagram Reels / TikTok (9:16)</option>
+        <option value="Instagram Square (1:1)">Instagram Square (1:1)</option>
+      </select>
+    </div>
+    <div>
+      <lbl>Number of Scenes</lbl>
+      <select id="sceneCount">
+        <option value="4">4 Scenes</option>
+        <option value="5" selected>5 Scenes</option>
+        <option value="6">6 Scenes</option>
+        <option value="8">8 Scenes</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<!-- MODULES -->
+<div class="card">
+  <div class="card-ttl"><span class="n">04</span> OUTPUT MODULES</div>
+  <lbl>Toggle what you need</lbl>
+  <div class="tog-row">
+    <div class="tog on" style="--cc:var(--scene-c)" data-key="scene" onclick="this.classList.toggle('on')"><span class="tog-dot"></span>🎬 Scene</div>
+    <div class="tog on" style="--cc:var(--image-c)" data-key="image" onclick="this.classList.toggle('on')"><span class="tog-dot"></span>🖼️ Image Prompt</div>
+    <div class="tog" style="--cc:var(--video-c)" data-key="video" onclick="this.classList.toggle('on')"><span class="tog-dot"></span>🎥 Video Prompt</div>
+    <div class="tog" style="--cc:var(--narration-c)" data-key="narration" onclick="this.classList.toggle('on')"><span class="tog-dot"></span>🎙️ Narration</div>
+  </div>
+  <button class="gen-btn" id="genBtn" onclick="generate()">GENERATE STORYBOARD →</button>
+  <div class="loader" id="loader"><div class="loader-inner"></div></div>
+  <div class="err" id="errMsg"></div>
+</div>
+
+<!-- RESULTS -->
+<div class="results" id="results">
+  <div class="res-hdr">
+    <div class="res-ttl" id="resTitle">YOUR BRIEF</div>
+    <button class="copy-all-btn" id="copyAllBtn">⊞ COPY ALL</button>
+  </div>
+  <div id="loglineEl" style="font-size:14px;color:var(--ink2);margin-bottom:14px;line-height:1.5;"></div>
+  <div id="styleBadgeEl"></div>
+  <!-- PIPELINE BANNER -->
+  <div class="pipeline-banner">
+    <div class="pb-banner-head">
+      <span class="pb-banner-title">YOUR PRODUCTION PIPELINE</span>
+      <span class="pb-tier-tag" id="pipeTierTag">FREE — GOOGLE FLOW</span>
+    </div>
+    <div class="pipe-steps" id="pipeSteps"></div>
+  </div>
+
+  <div id="charPill" class="char-pill" style="display:none;">
+    <div class="char-pill-lbl">🎭 CHARACTER REFERENCE — paste into every image prompt for consistency</div>
+    <div class="char-pill-body" id="charPillText"></div>
+    <button class="char-pill-copy" id="charPillCp">COPY CHARACTER REFERENCE</button>
+  </div>
+  <div class="storyboard-wrap">
+    <div class="sb-label">STORYBOARD — Click a frame to expand</div>
+    <div class="filmstrip" id="filmstrip"></div>
+    <div class="scene-panel" id="scenePanel">
+      <div class="panel-head">
+        <span class="panel-scene-num" id="panelNum">SCENE 1</span>
+        <span class="panel-scene-name" id="panelName"></span>
+        <div class="panel-nav">
+          <button class="panel-nav-btn" id="prevBtn" onclick="navScene(-1)">← PREV</button>
+          <button class="panel-nav-btn" id="nextBtn" onclick="navScene(1)">NEXT →</button>
+        </div>
+      </div>
+      <div class="panel-body" id="panelBody"></div>
+    </div>
+  </div>
+  <div class="checklist" id="checklist"></div>
+</div>
+
+</div>
+
+<!-- FOOTER -->
+<footer style="border-top:2px solid var(--border);margin-top:60px;padding:24px 20px;text-align:center;">
+  <div style="max-width:900px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+    <span style="font-family:var(--stamp);font-size:22px;letter-spacing:.05em;color:var(--ink2);">PROMPT<span style="color:var(--accent);">KIT</span></span>
+    <span style="font-family:var(--mono);font-size:10px;color:var(--ink2);letter-spacing:.08em;">BUILT BY</span>
+    <a href="https://instagram.com/aktuallyakk" target="_blank" style="display:inline-flex;align-items:center;gap:7px;text-decoration:none;border:1.5px solid var(--border);padding:8px 16px;font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--ink);text-transform:uppercase;transition:all .15s;" onmouseover="this.style.borderColor='var(--ink)'" onmouseout="this.style.borderColor='var(--border)'">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
+      @aktuallyakk
+    </a>
+  </div>
+</footer>
+
+<script>
+// ── STYLE DNA ─────────────────────────────────────────────────────────────────
+// Each style has a full visual fingerprint that gets injected into every image prompt
+const STYLES = {
+  ghibli: {
+    name: 'Studio Ghibli',
+    emoji: '🌿',
+    promptDNA: `Studio Ghibli animation style, hand-painted watercolor backgrounds, soft muted earth tones with warm amber and sage highlights, loose organic linework, lush detailed environments with intricate foliage, large expressive eyes with subtle emotion, gentle natural lighting with soft diffused shadows, painterly sky gradients, nostalgic dreamlike atmosphere, rich environmental storytelling, Hayao Miyazaki aesthetic`,
+    avoidDNA: `avoid harsh CGI shading, avoid neon colors, avoid hard geometric lines, avoid photorealism`,
+    cameraStyle: `wide establishing shots to show lush environments, gentle close-ups for emotional beats, low horizon lines`,
+    mood: `whimsical, nostalgic, emotionally warm`
+  },
+  flat2d: {
+    name: 'Flat 2D',
+    emoji: '📐',
+    promptDNA: `flat 2D vector animation style, bold clean outlines 3-4px thick, solid color fills with no gradients or textures, limited color palette of 4-6 bold colors, geometric simplified shapes, strong graphic composition, modern editorial illustration aesthetic, inspired by motion design and explainer animation, crisp sharp edges`,
+    avoidDNA: `avoid gradients, avoid textures, avoid 3D depth, avoid photo-realism, avoid complex shading`,
+    cameraStyle: `centered symmetrical compositions, strong graphic framing, bold negative space`,
+    mood: `clean, modern, punchy, bold`
+  },
+  stopmotion: {
+    name: 'Stop Motion',
+    emoji: '🧸',
+    promptDNA: `stop motion claymation style, textured clay surfaces with visible fingerprint marks and tactile imperfections, chunky rounded forms, warm studio overhead lighting with soft shadows, earthy clay color palette, handcrafted felt and fabric textures in backgrounds, Wallace and Gromit aesthetic, Laika studios quality, charming imperfect surface details, slightly oversized expressive heads and hands`,
+    avoidDNA: `avoid digital smoothness, avoid CGI sheen, avoid perfect symmetry, avoid flat surfaces`,
+    cameraStyle: `close intimate framing to show clay texture, eye-level or slightly low angle, shallow depth of field`,
+    mood: `charming, tactile, warm, handmade`
+  },
+  comicbook: {
+    name: 'Comic Book',
+    emoji: '💥',
+    promptDNA: `comic book illustration style, bold heavy ink outlines 4-5px, Ben-Day halftone dot patterns in shadows, saturated primary color palette (red, blue, yellow, black), dynamic action framing with Dutch angles, panel-style composition with strong foreground subjects, ink crosshatching for shadows, motion blur lines for action, Marvel and DC comics aesthetic, high contrast dramatic lighting`,
+    avoidDNA: `avoid watercolor softness, avoid 3D rendering, avoid pastel colors, avoid photorealism`,
+    cameraStyle: `dramatic low angles for power, Dutch angles for tension, extreme close-ups for emotion, wide for action`,
+    mood: `dramatic, high-energy, bold, action-driven`
+  },
+  pixar: {
+    name: 'Pixar CGI',
+    emoji: '✨',
+    promptDNA: `Pixar 3D CGI animation style, polished subsurface scattering on skin and surfaces, volumetric cinematic lighting with soft rim lights, exaggerated but believable character proportions, oversized expressive eyes, rich saturated color grading, photorealistic material textures on stylized forms, Pixar RenderMan quality, smooth curved geometry, cinematic depth of field, emotional facial micro-expressions`,
+    avoidDNA: `avoid flat 2D, avoid rough textures, avoid harsh unlit shadows, avoid uncanny valley realism`,
+    cameraStyle: `cinematic wide establishing shots, rack focus close-ups, sweeping camera moves, golden ratio composition`,
+    mood: `heartwarming, cinematic, polished, emotionally resonant`
+  },
+  anime: {
+    name: 'Anime',
+    emoji: '⛩️',
+    promptDNA: `anime illustration style, large expressive eyes with detailed iris and light reflections, cel shading with hard shadow cuts and bright highlight lines, vibrant saturated color palette, clean sharp linework, dynamic speed lines for motion, dramatic rim lighting and lens flares, detailed hair with individual strand highlights, emotional dramatic expressions, inspired by modern anime production quality`,
+    avoidDNA: `avoid western cartoon proportions, avoid soft painterly textures, avoid photorealism, avoid dull muted colors`,
+    cameraStyle: `dramatic low angles, close emotional face shots, dynamic diagonal compositions, sky shots for dramatic reveals`,
+    mood: `dramatic, expressive, vibrant, emotionally intense`
+  }
+};
+
+// ── STATE ──────────────────────────────────────────────────────────────────────
+let tier = 'free';
+let selectedStyleKey = 'ghibli';
+let generatedData = null;
+let activeMods = {};
+let activeScene = 0;
+const sceneEmojis = ['🌅','🌆','⚡','🌀','🔥','💥','🌙','✨'];
+
+// ── UI ─────────────────────────────────────────────────────────────────────────
+function setTier(t) {
+  tier = t;
+  document.getElementById('freeBtn').className = 't-btn' + (t==='free'?' af':'');
+  document.getElementById('proBtn').className = 't-btn' + (t==='pro'?' ap':'');
+  if (generatedData) renderChecklist();
+}
+
+function pickStyle(el) {
+  document.querySelectorAll('.sp').forEach(p => p.classList.remove('sel'));
+  el.classList.add('sel');
+  selectedStyleKey = el.dataset.style;
+}
+
+function setEg(el) {
+  document.getElementById('ideaInput').value = el.textContent.trim().replace(/^.\s/,'');
+}
+
+function getMods() {
+  const m = {};
+  document.querySelectorAll('.tog').forEach(t => m[t.dataset.key] = t.classList.contains('on'));
+  return m;
+}
+
+// ── SYSTEM PROMPT WITH STYLE DNA ───────────────────────────────────────────────
+function buildSysPrompt() {
+  const charName = document.getElementById('charName').value.trim() || 'the main character';
+  const charType = document.getElementById('charType').value;
+  const charDesc = document.getElementById('charDesc').value.trim() || 'visually distinctive and expressive';
+  const platform = document.getElementById('platform').value;
+  const sceneCount = document.getElementById('sceneCount').value;
+  const mods = getMods();
+  const aspect = platform.includes('9:16') ? '9:16 vertical' : platform.includes('1:1') ? '1:1 square' : '16:9 landscape';
+  const style = STYLES[selectedStyleKey];
+
+  const fields = [];
+  if (mods.scene) fields.push(`"scene": "2-3 sentence visual description — action, emotion, environment. What the viewer sees and feels."`);
+  if (mods.image) fields.push(`"imagePrompt": "Complete AI image generation prompt. Structure: [character description], [scene action and emotion], [environment and background detail], [lighting setup], [camera angle and framing — ${style.cameraStyle}], [FULL STYLE DNA], [aspect ratio ${aspect}], [mood: ${style.mood}], [avoid: ${style.avoidDNA}]. Must be rich, specific, and paste-ready. This frame will be used for image-to-video so it should show a clear moment with implied motion potential."`);
+  if (mods.video) fields.push(`"videoPrompt": "Image-to-video motion prompt for Kling 3.0 / Veo 3. Describe: camera movement (specific — e.g. slow push-in, gentle pan left, orbit around subject), character action and body movement, any environmental animation (wind, particles, water), duration 4-6 seconds, pacing. Keep motion subtle enough to preserve the ${style.name} aesthetic. Paste-ready."`);
+  if (mods.narration) fields.push(`"narration": "Punchy voiceover or on-screen caption. Max 2 sentences. Conversational, not robotic. Fits ${platform} energy."`);
+
+  return `You are a professional animation director specialising in faceless AI cartoon channels for YouTube and Instagram.
+
+CHOSEN VISUAL STYLE: ${style.name}
+STYLE DNA (embed verbatim in every image prompt):
+"${style.promptDNA}"
+WHAT TO AVOID: ${style.avoidDNA}
+CAMERA TENDENCIES: ${style.cameraStyle}
+MOOD: ${style.mood}
+
+CHARACTER REFERENCE (embed character description in every image prompt):
+Name: ${charName} | Type: ${charType} | Look: ${charDesc}
+IMPORTANT: Character must look visually identical across all scenes.
+
+Respond ONLY with valid JSON — no markdown, no extra text:
+{
+  "title": "Punchy video title",
+  "logline": "One-sentence hook that makes people want to watch",
+  "characterReference": "Single rich paragraph — character name, type, full appearance description written to paste directly into any AI image tool. Include the ${style.name} style reference.",
+  "scenes": [
+    {
+      "sceneNumber": 1,
+      "sceneTitle": "Evocative 3-5 word name",
+      "emoji": "Single most fitting emoji for this scene mood",
+      ${fields.join(',\n      ')}
+    }
+  ]
+}
+
+Rules: Exactly ${sceneCount} scenes for ${platform}. Every image prompt MUST include the full STYLE DNA verbatim. Image prompts always open with the character description. Aspect ratio ${aspect} in every image prompt. Story must be emotionally engaging — show don't tell. Make it the kind of content that gets saved and reshared.`;
+}
+
+// ── GENERATE ───────────────────────────────────────────────────────────────────
+async function generate() {
+  const idea = document.getElementById('ideaInput').value.trim();
+  if (!idea) { showErr('Add your video idea first ↑'); return; }
+  const mods = getMods();
+  if (!Object.values(mods).some(Boolean)) { showErr('Enable at least one output module'); return; }
+
+  const btn = document.getElementById('genBtn');
+  btn.disabled = true; btn.textContent = 'GENERATING...';
+  document.getElementById('loader').classList.add('on');
+  document.getElementById('errMsg').classList.remove('on');
+  document.getElementById('results').classList.remove('on');
+
+  try {
+    const res = await fetch('/api/proxy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 4500,
+        system: buildSysPrompt(),
+        messages: [{ role: 'user', content: idea }]
+      })
+    });
+    const data = await res.json();
+    const raw = (data.content||[]).map(b => b.text||'').join('');
+    let parsed;
+    try { parsed = JSON.parse(raw.replace(/```json|```/g,'').trim()); }
+    catch(e) { throw new Error('Could not parse response — please try again'); }
+    generatedData = parsed;
+    activeMods = mods;
+    renderResults();
+  } catch(e) {
+    showErr(e.message || 'Something went wrong — try again');
+  } finally {
+    btn.disabled = false; btn.textContent = 'GENERATE STORYBOARD →';
+    document.getElementById('loader').classList.remove('on');
+  }
+}
+
+// ── RENDER ─────────────────────────────────────────────────────────────────────
+function renderResults() {
+  const d = generatedData;
+  const style = STYLES[selectedStyleKey];
+
+  document.getElementById('resTitle').textContent = d.title || 'YOUR BRIEF';
+  document.getElementById('loglineEl').textContent = d.logline || '';
+
+  // Style badge
+  document.getElementById('styleBadgeEl').innerHTML = `
+    <div class="style-badge"><span class="dot"></span>${style.emoji} ${style.name.toUpperCase()} — ${style.mood}</div>
+  `;
+
+  // Character pill
+  if (d.characterReference) {
+    document.getElementById('charPill').style.display = 'block';
+    document.getElementById('charPillText').textContent = d.characterReference;
+    document.getElementById('charPillCp').onclick = () =>
+      copyText(d.characterReference, document.getElementById('charPillCp'), 'COPY CHARACTER REFERENCE');
+  }
+
+  // Filmstrip
+  const filmstrip = document.getElementById('filmstrip');
+  filmstrip.innerHTML = '';
+  (d.scenes||[]).forEach((sc, i) => {
+    if (i > 0) {
+      const arr = document.createElement('div');
+      arr.className = 'frame-arrow'; arr.textContent = '›';
+      filmstrip.appendChild(arr);
+    }
+    const frame = document.createElement('div');
+    frame.className = 'frame' + (i===0?' active':'');
+    frame.dataset.idx = i;
+    frame.innerHTML = `
+      <div class="frame-num">SCENE ${sc.sceneNumber||i+1}</div>
+      <div class="frame-art">${sc.emoji || sceneEmojis[i % sceneEmojis.length]}</div>
+      <div class="frame-title">${esc(sc.sceneTitle||'')}</div>
+      <div class="frame-active-bar"></div>
+    `;
+    frame.onclick = () => openScene(i);
+    filmstrip.appendChild(frame);
+  });
+
+  openScene(0);
+  renderPipeBanner();
+  renderChecklist();
+
+  document.getElementById('results').classList.add('on');
+  document.getElementById('copyAllBtn').onclick = copyAll;
+  document.getElementById('results').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+function openScene(idx) {
+  if (!generatedData) return;
+  const scenes = generatedData.scenes || [];
+  if (idx < 0 || idx >= scenes.length) return;
+  activeScene = idx;
+
+  document.querySelectorAll('.frame').forEach(f => f.classList.remove('active'));
+  const frames = document.querySelectorAll('.frame');
+  if (frames[idx]) { frames[idx].classList.add('active'); frames[idx].scrollIntoView({ behavior:'smooth', block:'nearest', inline:'center' }); }
+
+  const sc = scenes[idx];
+  document.getElementById('panelNum').textContent = `SCENE ${sc.sceneNumber||idx+1}`;
+  document.getElementById('panelName').textContent = sc.sceneTitle || '';
+  document.getElementById('prevBtn').disabled = idx === 0;
+  document.getElementById('nextBtn').disabled = idx === scenes.length - 1;
+
+  const body = document.getElementById('panelBody');
+  body.innerHTML = '';
+  if (activeMods.scene && sc.scene) body.appendChild(makeBlock('🎬','SCENE DESCRIPTION','pb-scene', sc.scene));
+  if (activeMods.image && sc.imagePrompt) body.appendChild(makeBlock('🖼️','IMAGE PROMPT — paste into Google Flow or Higgsfield','pb-image', sc.imagePrompt));
+  if (activeMods.video && sc.videoPrompt) body.appendChild(makeBlock('🎥','VIDEO PROMPT — image to video motion','pb-video', sc.videoPrompt));
+  if (activeMods.narration && sc.narration) body.appendChild(makeBlock('🎙️','NARRATION / CAPTION','pb-narration', sc.narration));
+
+  // Per-scene next step
+  if (generatedData) body.appendChild(mkSceneNext(idx, generatedData.scenes.length));
+  document.getElementById('scenePanel').classList.add('on');
+}
+
+function navScene(dir) { openScene(activeScene + dir); }
+
+function makeBlock(icon, label, cls, text) {
+  const div = document.createElement('div');
+  div.className = `pb ${cls}`;
+  div.innerHTML = `
+    <div class="pb-hd">
+      <span class="pb-lbl">${icon} ${label}</span>
+      <button class="pb-cp">COPY</button>
+    </div>
+    <div class="pb-txt">${esc(text)}</div>
+  `;
+  div.querySelector('.pb-cp').addEventListener('click', function() {
+    copyText(text, this, 'COPY');
+  });
+  return div;
+}
+
+function renderChecklist() {
+  if (!generatedData) return;
+  const platform = document.getElementById('platform').value;
+  const steps = buildSteps(tier, activeMods, platform);
+  const tierLabel = tier === 'free' ? 'FREE — GOOGLE FLOW' : 'PRO — HIGGSFIELD';
+  document.getElementById('checklist').innerHTML = `
+    <div class="next-steps">
+      <div class="ns-hd">
+        <span class="ns-lbl">✅ WHAT TO DO NEXT — Step by step</span>
+        <span class="ns-tier-badge">${tierLabel}</span>
+      </div>
+      <div class="ns-body">
+        ${steps.map(s=>`<div class="ns-step"><span class="ns-num">${s.n}</span><span>${s.text}</span></div>`).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function buildSteps(t, mods, platform) {
+  const steps = []; let n = 1;
+  if (t === 'free') {
+    if (mods.image) {
+      steps.push({n:n++, text:`Go to <a href="https://flow.google.com" target="_blank" class="ns-link">Google Flow</a> — paste your <strong>Image Prompt</strong> exactly as generated and create your scene frame (free, 50 credits/day)`});
+      steps.push({n:n++, text:`Save each image — this is your <strong>storyboard frame</strong>. Use your first image as a visual character reference for all remaining scenes to keep them consistent`});
+    }
+    if (mods.video) {
+      steps.push({n:n++, text:`In Google Flow → <strong>Image to Video</strong> → upload your scene frame → paste the <strong>Video Prompt</strong> → set clip to 4–6 seconds using Veo 3`});
+      steps.push({n:n++, text:`<strong>Free tip:</strong> 50 credits reset daily. Each image-to-video costs ~5–10 credits — spread scenes across a couple of days if needed`});
+    }
+    if (!mods.video && mods.image) {
+      steps.push({n:n++, text:`To animate your frames: Google Flow → <strong>Image to Video</strong> → upload image → describe the motion → 4–6 second clip`});
+    }
+    if (mods.narration) steps.push({n:n++, text:`Paste your <strong>Narration</strong> into <a href="https://elevenlabs.io" target="_blank" class="ns-link">ElevenLabs</a> free tier — pick a voice that matches your character's energy`});
+    steps.push({n:n++, text:`Edit all clips in <strong>CapCut</strong> (free) — sequence scenes, add narration audio, background music, and captions. Export optimised for ${platform}`});
+  } else {
+    if (mods.image) {
+      steps.push({n:n++, text:`Open <a href="https://higgsfield.ai" target="_blank" class="ns-link">Higgsfield</a> → Image Studio → paste your <strong>Image Prompt</strong> exactly as generated → choose the model that matches your style best`});
+      steps.push({n:n++, text:`Use your first generated image as a <strong>Character ID</strong> reference in Higgsfield — upload it as your visual anchor so all remaining scenes match`});
+    }
+    if (mods.video) {
+      steps.push({n:n++, text:`Higgsfield → Video → <strong>Image to Video</strong> → upload frame → paste <strong>Video Prompt</strong> → select <strong>Kling 3.0</strong> → set 4–6 seconds`});
+      steps.push({n:n++, text:`Use Kling 3.0's <strong>start + end frame control</strong>: set the last frame of Scene N as the opening frame of Scene N+1 for seamless scene transitions`});
+    }
+    if (mods.narration) steps.push({n:n++, text:`Narration → <a href="https://elevenlabs.io" target="_blank" class="ns-link">ElevenLabs</a> or Higgsfield's Kling audio sync for lip-synced character dialogue`});
+    steps.push({n:n++, text:`Final edit in <strong>CapCut</strong> or <strong>DaVinci Resolve</strong> — sequence clips, add narration, music, captions. Export at optimal settings for ${platform}`});
+  }
+  return steps;
+}
+
+// ── COPY ───────────────────────────────────────────────────────────────────────
+function copyText(text, btn, originalLabel) {
+  const doFallback = () => {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;pointer-events:none;';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    try { document.execCommand('copy'); btn.textContent = 'COPIED ✓'; setTimeout(() => btn.textContent = originalLabel, 1800); } catch(e) { btn.textContent = 'SELECT + COPY ↑'; }
+    document.body.removeChild(ta);
+  };
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = 'COPIED ✓';
+      setTimeout(() => btn.textContent = originalLabel, 1800);
+    }).catch(doFallback);
+  } else { doFallback(); }
+}
+
+function copyAll() {
+  if (!generatedData) return;
+  const style = STYLES[selectedStyleKey];
+  const parts = [`STYLE: ${style.name}\nSTYLE DNA: ${style.promptDNA}`];
+  if (generatedData.characterReference) parts.push(`CHARACTER REFERENCE\n${generatedData.characterReference}`);
+  (generatedData.scenes||[]).forEach(sc => {
+    parts.push(`--- SCENE ${sc.sceneNumber}: ${sc.sceneTitle} ---`);
+    if (sc.scene) parts.push(`SCENE:\n${sc.scene}`);
+    if (sc.imagePrompt) parts.push(`IMAGE PROMPT:\n${sc.imagePrompt}`);
+    if (sc.videoPrompt) parts.push(`VIDEO PROMPT:\n${sc.videoPrompt}`);
+    if (sc.narration) parts.push(`NARRATION:\n${sc.narration}`);
+  });
+  copyText(parts.join('\n\n'), document.getElementById('copyAllBtn'), '⊞ COPY ALL');
+}
+
+function showErr(msg) { const el = document.getElementById('errMsg'); el.textContent = msg; el.classList.add('on'); }
+
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+
+// ── PIPELINE BANNER ──────────────────────────────────────────────────────────
+function renderPipeBanner() {
+  const isFree = tier === 'free';
+  document.getElementById('pipeTierTag').textContent = isFree ? 'FREE — GOOGLE FLOW' : 'PRO — HIGGSFIELD';
+  const steps = isFree ? [
+    {icon:'🖼️', action:'Generate Image', tool:'Google Flow', url:'https://flow.google.com'},
+    {icon:'🎥', action:'Image to Video', tool:'Veo 3', url:'https://flow.google.com'},
+    {icon:'🎙️', action:'Add Narration', tool:'ElevenLabs', url:'https://elevenlabs.io'},
+    {icon:'✂️', action:'Edit & Export', tool:'CapCut (free)', url:'https://capcut.com'},
+    {icon:'🚀', action:'Post & Grow', tool:'YouTube / IG', url:null},
+  ] : [
+    {icon:'🖼️', action:'Generate Image', tool:'Higgsfield', url:'https://higgsfield.ai'},
+    {icon:'🎥', action:'Image to Video', tool:'Kling 3.0', url:'https://higgsfield.ai'},
+    {icon:'🎙️', action:'Add Narration', tool:'ElevenLabs', url:'https://elevenlabs.io'},
+    {icon:'✂️', action:'Edit & Export', tool:'CapCut / DaVinci', url:null},
+    {icon:'🚀', action:'Post & Grow', tool:'YouTube / IG', url:null},
+  ];
+  document.getElementById('pipeSteps').innerHTML = steps.map((s,i) => `
+    ${i>0 ? '<div class="pipe-arrow">›</div>' : ''}
+    <div class="pipe-step">
+      <div class="pipe-step-n">STEP ${i+1}</div>
+      <div class="pipe-step-icon">${s.icon}</div>
+      <div class="pipe-step-action">${s.action}</div>
+      <div class="pipe-step-tool">${s.url ? `<a href="${s.url}" target="_blank">${s.tool}</a>` : s.tool}</div>
+    </div>
+  `).join('');
+}
+
+// ── PER-SCENE NEXT STEP ───────────────────────────────────────────────────────
+function mkSceneNext(idx, total) {
+  const isFree = tier === 'free';
+  const isFirst = idx === 0, isLast = idx === total - 1;
+  const steps = [];
+  if (activeMods.image) {
+    const t = isFree
+      ? `<a href="https://flow.google.com" target="_blank">Google Flow</a>`
+      : `<a href="https://higgsfield.ai" target="_blank">Higgsfield</a>`;
+    steps.push(`Paste the <strong>Image Prompt</strong> above into ${t} → generate your scene frame`);
+    if (isFirst) steps.push(`Save this image — it's your <strong>character reference</strong>. Upload it as your visual anchor for all remaining scenes`);
+    else steps.push(`Match this frame to your Scene 1 image — upload Scene 1 as your character reference if the tool supports it`);
+  }
+  if (activeMods.video) {
+    const vt = isFree
+      ? `<a href="https://flow.google.com" target="_blank">Google Flow</a> → Image to Video → Veo 3 → 4–6 seconds`
+      : `<a href="https://higgsfield.ai" target="_blank">Higgsfield</a> → Video → Image to Video → <strong>Kling 3.0</strong> → 4–6 seconds`;
+    steps.push(`Upload your frame → paste the <strong>Video Prompt</strong> above → ${vt}`);
+    if (!isFirst && !isFree) steps.push(`Set the last frame of Scene ${idx} as the <strong>start frame</strong> of this clip — Kling 3.0 makes the transition seamless`);
+  }
+  if (activeMods.narration) steps.push(`Copy the <strong>Narration</strong> above → paste into <a href="https://elevenlabs.io" target="_blank">ElevenLabs</a> → generate voiceover for this scene`);
+  if (isLast) steps.push(`All scenes done! Open <strong>CapCut</strong>${!isFree?' or DaVinci Resolve':''} → sequence all clips → add narration, background music, captions → export`);
+  else steps.push(`Done here? Hit <strong>NEXT →</strong> above to move to Scene ${idx + 2}`);
+  const div = document.createElement('div');
+  div.className = 'scene-next';
+  div.innerHTML = `
+    <div class="sn-label">→ DO THIS NOW — SCENE ${idx+1} OF ${total}</div>
+    <div class="sn-steps">${steps.map((s,i) => `<div class="sn-row"><span class="sn-num">${i+1}</span><span>${s}</span></div>`).join('')}</div>
+    <div class="sn-progress">${idx+1} of ${total} scenes — ${Math.round(((idx+1)/total)*100)}% complete</div>
+  `;
+  return div;
+}
+
+// ── FINAL CHECKLIST ────────────────────────────────────────────────────────────
+function renderChecklist() {
+  if (!generatedData) return;
+  const isFree = tier === 'free';
+  const platform = document.getElementById('platform').value;
+  const s = STYLES[selectedStyleKey];
+  const rows = [];
+  if (activeMods.image) rows.push({
+    icon:'🖼️', action:'GENERATE YOUR IMAGES', badge: isFree?'free':'pro', tool: isFree?'GOOGLE FLOW':'HIGGSFIELD',
+    detail: isFree
+      ? `Go to <a href="https://flow.google.com" target="_blank">flow.google.com</a> — free, 50 credits/day. Paste each Image Prompt exactly as generated. Save every output. Use Scene 1's image as your character anchor for all scenes.`
+      : `Open <a href="https://higgsfield.ai" target="_blank">Higgsfield</a> → Image Studio. Paste each Image Prompt as generated. After Scene 1, upload that image as your Character ID to lock visual consistency across all scenes.`
+  });
+  if (activeMods.video) rows.push({
+    icon:'🎥', action:'ANIMATE SCENE BY SCENE', badge: isFree?'free':'pro', tool: isFree?'GOOGLE FLOW / VEO 3':'KLING 3.0',
+    detail: isFree
+      ? `Google Flow → Image to Video. Upload each frame → paste Video Prompt → Veo 3 → 4–6 seconds. Each clip costs ~5–10 credits. Free tip: 50 credits reset every day.`
+      : `Higgsfield → Video → Image to Video. Upload frame → paste Video Prompt → select <strong>Kling 3.0</strong> → 4–6 seconds. Use start + end frame control — set last frame of Scene N as start frame of Scene N+1 for seamless transitions.`
+  });
+  if (activeMods.narration) rows.push({
+    icon:'🎙️', action:'RECORD YOUR NARRATION', badge:'free', tool:'ELEVENLABS',
+    detail:`Go to <a href="https://elevenlabs.io" target="_blank">elevenlabs.io</a> (free tier available). Paste each scene Narration text. Pick a voice that matches your character — preview a few. Download all audio clips.`
+  });
+  rows.push({
+    icon:'✂️', action:'EDIT YOUR VIDEO', badge:'free', tool: isFree?'CAPCUT':'CAPCUT / DAVINCI',
+    detail: isFree
+      ? `Open <strong>CapCut</strong> (free). Import all clips in scene order. Add narration, background music from CapCut's free library, and captions. Export optimised for ${platform}.`
+      : `<strong>CapCut</strong> or <strong>DaVinci Resolve</strong>. Import clips in order. Layer narration, music, captions. Color grade to enhance your ${s.name} style. Export at highest quality for ${platform}.`
+  });
+  rows.push({
+    icon:'🚀', action:'POST AND GROW', badge:null, tool: platform.includes('YouTube')?'YOUTUBE':'INSTAGRAM',
+    detail:`Upload to ${platform}. Write a hook in your caption. Post consistently — same day/time weekly builds the algorithm. Reply to every comment in the first hour to boost engagement.`
+  });
+  document.getElementById('checklist').innerHTML = `
+    <div class="cl-head"><div class="cl-title">FULL PRODUCTION CHECKLIST</div><div class="cl-sub">FOLLOW THESE STEPS IN ORDER TO PUBLISH YOUR VIDEO</div></div>
+    <div class="cl-body">${rows.map((r,i) => `
+      <div class="cl-row">
+        <div class="cl-icon">${r.icon}</div>
+        <div><div class="cl-action">STEP ${i+1} — ${r.action}</div><div class="cl-detail">${r.detail}</div></div>
+        <div class="cl-badge ${r.badge||''}">${r.tool}</div>
+      </div>
+    `).join('')}</div>
+  `;
+}
+
+</script>
+</body>
+</html>
