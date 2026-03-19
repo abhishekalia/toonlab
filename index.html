@@ -8,7 +8,7 @@
 <style>
 :root {
   --bg: #f5f2eb;
-  --surface: #ffffff; 
+  --surface: #ffffff;
   --surface2: #f0ece3;
   --border: #e0d9cc;
   --ink: #1a1610;
@@ -444,10 +444,19 @@ select {
   </div>
   <div id="loglineEl" style="font-size:14px;color:var(--ink2);margin-bottom:14px;line-height:1.5;"></div>
   <div id="styleBadgeEl"></div>
+  <!-- PIPELINE BANNER -->
+  <div class="pipeline-banner">
+    <div class="pb-banner-head">
+      <span class="pb-banner-title">YOUR PRODUCTION PIPELINE</span>
+      <span class="pb-tier-tag" id="pipeTierTag">FREE — GOOGLE FLOW</span>
+    </div>
+    <div class="pipe-steps" id="pipeSteps"></div>
+  </div>
+
   <div id="charPill" class="char-pill" style="display:none;">
     <div class="char-pill-lbl">🎭 CHARACTER REFERENCE — paste into every image prompt for consistency</div>
     <div class="char-pill-body" id="charPillText"></div>
-    <button class="char-pill-copy" id="charPillCopy">COPY CHARACTER REFERENCE</button>
+    <button class="char-pill-copy" id="charPillCp">COPY CHARACTER REFERENCE</button>
   </div>
   <div class="storyboard-wrap">
     <div class="sb-label">STORYBOARD — Click a frame to expand</div>
@@ -464,7 +473,7 @@ select {
       <div class="panel-body" id="panelBody"></div>
     </div>
   </div>
-  <div id="nextStepsEl"></div>
+  <div class="checklist" id="checklist"></div>
 </div>
 
 </div>
@@ -548,7 +557,7 @@ function setTier(t) {
   tier = t;
   document.getElementById('freeBtn').className = 't-btn' + (t==='free'?' af':'');
   document.getElementById('proBtn').className = 't-btn' + (t==='pro'?' ap':'');
-  if (generatedData) renderNextSteps();
+  if (generatedData) renderChecklist();
 }
 
 function pickStyle(el) {
@@ -672,8 +681,8 @@ function renderResults() {
   if (d.characterReference) {
     document.getElementById('charPill').style.display = 'block';
     document.getElementById('charPillText').textContent = d.characterReference;
-    document.getElementById('charPillCopy').onclick = () =>
-      copyText(d.characterReference, document.getElementById('charPillCopy'), 'COPY CHARACTER REFERENCE');
+    document.getElementById('charPillCp').onclick = () =>
+      copyText(d.characterReference, document.getElementById('charPillCp'), 'COPY CHARACTER REFERENCE');
   }
 
   // Filmstrip
@@ -753,12 +762,12 @@ function makeBlock(icon, label, cls, text) {
   return div;
 }
 
-function renderNextSteps() {
+function renderChecklist() {
   if (!generatedData) return;
   const platform = document.getElementById('platform').value;
   const steps = buildSteps(tier, activeMods, platform);
   const tierLabel = tier === 'free' ? 'FREE — GOOGLE FLOW' : 'PRO — HIGGSFIELD';
-  document.getElementById('nextStepsEl').innerHTML = `
+  document.getElementById('checklist').innerHTML = `
     <div class="next-steps">
       <div class="ns-hd">
         <span class="ns-lbl">✅ WHAT TO DO NEXT — Step by step</span>
