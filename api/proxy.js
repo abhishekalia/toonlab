@@ -1,7 +1,6 @@
-
 const https = require('https');
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -57,4 +56,4 @@ export default async function handler(req, res) {
     request.write(body);
     request.end();
   });
-}
+};
